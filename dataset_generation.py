@@ -1,38 +1,45 @@
 import json
+import os
+from multiprocessing.pool import Pool, ThreadPool
 
 import numpy as np
 import rdkit.Chem as Chem
-import os
-
 from tqdm import tqdm
+
+
+def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
+    periodic_table = Chem.GetPeriodicTable()
+
+    file = open(os.path.join(output_path, f'{compound_name.replace("/", "_")}.xyz'), 'w')
+
+    file.write(f"{len(atoms)}\n\n")
+
+    for coordinate, atom in zip(coordinates, atoms):
+        x = coordinate[0]
+        y = coordinate[1]
+        z = coordinate[2]
+        file.write(
+            f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n")
+
+    file.close()
 
 
 def generate_molecules():
     # Create xyz file
     data = np.load('DFT_all.npz', allow_pickle=True)
 
-    periodic_table = Chem.GetPeriodicTable()
-
     output_path = './molecules'
 
-    coordinate_length = 10
+    results = []
+    with ThreadPool() as p:
+        for i, (coordinates, atoms, compound_name) in tqdm(enumerate(
+                zip(data['coordinates'], data['atoms'], data['compounds'])), desc='Creating xyz files'):
+            if i > 1000:
+                break
+            results.append(p.apply_async(create_molecule_xyz_file, args=(coordinates, atoms, output_path, compound_name)))
 
-    for i in tqdm(range(len(data['coordinates']))[:50], desc='Creating xyz files'):
-        coordinates = data['coordinates'][i]
-        atoms = data['atoms'][i]
-
-        file = open(os.path.join(output_path, f'{data["compounds"][i].replace("/", "_")}.xyz'), 'w')
-
-        file.write(f"{len(atoms)}\n\n")
-
-        for coordinate, atom in tqdm(zip(coordinates, atoms), total=len(atoms), desc='Writing atoms', leave=False):
-            x = coordinate[0]
-            y = coordinate[1]
-            z = coordinate[2]
-            file.write(
-                f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n")
-
-        file.close()
+        for result in tqdm(results, desc='Results'):
+            result.get()
 
 
 def generate_parameters():
@@ -114,6 +121,6 @@ def generate_parameters_files():
 
 
 if __name__ == '__main__':
-    # generate_molecules()
-    generate_parameters()
-    generate_parameters_files()
+    generate_molecules()
+    # generate_parameters()
+    # generate_parameters_files()
