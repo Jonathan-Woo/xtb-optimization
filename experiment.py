@@ -12,33 +12,44 @@ def run_experiment(xtb_parameter_file_path, molecule_path):
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    result = subprocess.run([
-        'xtb',
-        molecule_path.resolve(),
-        '-v',
-        '--vparam',
-        xtb_parameter_file_path.resolve()
-    ], cwd=output_dir, capture_output=True, text=True)
+    try:
+        with open(output_dir / "stdout.txt", "w") as stdout_file, open(
+            output_dir / "stderr.txt", "w"
+        ) as stderr_file:
+            subprocess.run(
+                [
+                    "xtb",
+                    molecule_path.resolve(),
+                    "-v",
+                    "--vparam",
+                    xtb_parameter_file_path.resolve(),
+                ],
+                cwd=output_dir,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                timeout=5,
+            )
+    except Exception as e:
+        print(e)
 
-    with open(output_dir / 'stdout.txt', 'w') as f:
-        f.write(result.stdout)
 
-    with open(output_dir / 'stderr.txt', 'w') as f:
-        f.write(result.stderr)
-
-
-if __name__ == '__main__':
-    molecules_path = Path('./molecules')
-    experiments_path = Path('./experiments')
+if __name__ == "__main__":
+    molecules_path = Path("./molecules")
+    experiments_path = Path("./experiments")
 
     with Pool() as p:
-        results = []
-        for xtb_parameter_file_path in tqdm(list(experiments_path.glob('*/*/*.txt')), desc="Parameters"):
-            for molecule_path in tqdm(list(molecules_path.glob('*')), desc='Molecules', leave=False):
-                results.append(p.apply_async(
-                    run_experiment,
-                    args=(xtb_parameter_file_path, molecule_path)
-                ))
+        for xtb_parameter_file_path in tqdm(
+            list(experiments_path.glob("*/*/*.txt")), desc="Parameters"
+        ):
+            results = []
+            for molecule_path in tqdm(
+                list(molecules_path.glob("*")), desc="Molecules", leave=False
+            ):
+                results.append(
+                    p.apply_async(
+                        run_experiment, args=(xtb_parameter_file_path, molecule_path)
+                    )
+                )
 
-        for result in tqdm(results, desc='Results'):
-            result.get()
+            for result in tqdm(results, desc="Results"):
+                result.get()
