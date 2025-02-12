@@ -27,7 +27,7 @@ def run_experiment(xtb_parameter_file_path, molecule_path):
                 cwd=output_dir,
                 stdout=stdout_file,
                 stderr=stderr_file,
-                timeout=5,
+                timeout=60,
             )
     except Exception as e:
         print(e)
