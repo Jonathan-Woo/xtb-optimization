@@ -9,9 +9,9 @@ from tqdm.auto import tqdm
 def run_experiment(xtb_parameter_file_path, molecule_path):
     molecule_name = molecule_path.stem
     output_dir = xtb_parameter_file_path.parent / molecule_name
-    
+
     if output_dir.exists() and os.listdir(output_dir) != 0:
-         return
+        return
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -32,7 +32,7 @@ def run_experiment(xtb_parameter_file_path, molecule_path):
                 stderr=stderr_file,
                 timeout=60,
             )
-    except Exception as e:
+    except exception as e:
         print(e)
 
 
@@ -42,16 +42,20 @@ if __name__ == "__main__":
     experiments_path = Path("./experiments")
 
     with Pool() as p:
-        for xtb_parameter_file_path in tqdm(list(experiments_path.glob('*/*/*.txt')), desc="Parameters"):
+        for xtb_parameter_file_path in tqdm(
+            list(experiments_path.glob("*/*/*.txt")), desc="Parameters"
+        ):
             results = []
-            for molecule_path in tqdm(list(molecules_path.glob('*')), desc='Molecules', leave=False):
-              
-                results.append(p.apply_async(
-                    run_experiment,
-                    args=(xtb_parameter_file_path, molecule_path)
-                ))
+            for molecule_path in tqdm(
+                list(molecules_path.glob("*")), desc="Molecules", leave=False
+            ):
+                results.append(
+                    p.apply_async(
+                        run_experiment, args=(xtb_parameter_file_path, molecule_path)
+                    )
+                )
 
-            for result in tqdm(results, desc='Results'):
+            for result in tqdm(results, desc="Results"):
                 result.get()
 
     # selected_molecules = {
