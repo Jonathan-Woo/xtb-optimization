@@ -88,7 +88,7 @@ def generate_parameters():
     # selected_parameters = ["ks", "kp", "kexp"]
     selected_parameters = default_parameter_values.keys()
 
-    new_parameter_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    new_parameter_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
 
     new_parameters = {}
     for parameter_name, base_value in default_parameter_values.items():
