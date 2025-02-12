@@ -34,7 +34,8 @@ def run_experiment(xtb_parameter_file_path, molecule_path):
 
 
 if __name__ == "__main__":
-    molecules_path = Path("./molecules")
+    n_molecules, seed = 100, 42
+    molecules_path = Path(f"./molecules_{n_molecules}_molecules_{seed}_seed")
     experiments_path = Path("./experiments")
 
     with Pool() as p:
@@ -53,3 +54,31 @@ if __name__ == "__main__":
 
             for result in tqdm(results, desc="Results"):
                 result.get()
+
+    # selected_molecules = {
+    #     "kp": "C3NSiH11_21_conformer_6",
+    #     "ks": "C3NSiH11_21_conformer_6",
+    #     "kexp": "CNSSi2H3_119_conformer_1",
+    # }
+
+    # with Pool() as p:
+    #     for parameter_name, molecule_name in selected_molecules.items():
+    #         for xtb_parameter_file_path in tqdm(
+    #             list(experiments_path.glob(f"*/*/{parameter_name}*.txt")),
+    #             desc="Parameters",
+    #         ):
+    #             results = []
+    #             for molecule_path in tqdm(
+    #                 list(molecules_path.glob(f"{molecule_name}.xyz")),
+    #                 desc="Molecules",
+    #                 leave=False,
+    #             ):
+    #                 results.append(
+    #                     p.apply_async(
+    #                         run_experiment,
+    #                         args=(xtb_parameter_file_path, molecule_path),
+    #                     )
+    #                 )
+
+    #             for result in tqdm(results, desc="Results"):
+    #                 result.get()
