@@ -27,20 +27,25 @@ def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
     file.close()
 
 
-def generate_molecules():
-    # Create xyz file
+def generate_molecules(seed, n_molecules):
+    np.random.seed(seed)
+
     data = np.load("DFT_all.npz", allow_pickle=True)
 
-    output_path = "./molecules"
+    output_path = f"./molecules_{n_molecules}_molecules_{seed}_seed"
+    os.makedirs(output_path, exist_ok=True)
+
+    molecules = list(zip(data["coordinates"], data["atoms"], data["compounds"]))
+    sampled_indices = np.random.choice(len(molecules), n_molecules, replace=False)
 
     results = []
     with ThreadPool() as p:
-        for i, (coordinates, atoms, compound_name) in tqdm(
-            enumerate(zip(data["coordinates"], data["atoms"], data["compounds"])),
+        for index in tqdm(
+            sampled_indices,
             desc="Creating xyz files",
         ):
-            if i > 1000:
-                break
+            coordinates, atoms, compound_name = molecules[index]
+
             results.append(
                 p.apply_async(
                     create_molecule_xyz_file,
@@ -53,7 +58,7 @@ def generate_molecules():
 
 
 def generate_parameters():
-    base_parameters = {
+    default_parameter_values = {
         "ks": 1.85,
         "kp": 2.23,
         "kd": 2.23,
@@ -80,17 +85,19 @@ def generate_parameters():
         "kexplight": 1,
     }
 
-    selected_parameters = ["ks", "kp", "kexp"]
+    # selected_parameters = ["ks", "kp", "kexp"]
+    selected_parameters = default_parameter_values.keys()
 
     new_parameter_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     new_parameters = {}
-    for parameter_name, base_value in base_parameters.items():
+    for parameter_name, base_value in default_parameter_values.items():
         if parameter_name in selected_parameters:
             new_parameter_list = []
             for factor in new_parameter_factors:
                 new_parameter_list.append(
-                    ((base_value * (10**5)) * (factor * 10)) / 10**6
+                    ((base_value * (10**5)) * (factor * 10))
+                    / 10**6  # Integer arithmetic to avoid floating point errors
                 )
             new_parameters[parameter_name] = {
                 factor: value
@@ -146,6 +153,6 @@ def generate_parameters_files():
 
 
 if __name__ == "__main__":
-    # generate_molecules()
+    generate_molecules(n_molecules=100, seed=42)
     generate_parameters()
     generate_parameters_files()
