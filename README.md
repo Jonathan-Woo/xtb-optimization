@@ -1,4 +1,4 @@
-# XTB Optimization
+# xtb Optimization
 
 ## Setup
 
