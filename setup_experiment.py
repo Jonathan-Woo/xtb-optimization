@@ -7,27 +7,26 @@ import rdkit.Chem as Chem
 from tqdm import tqdm
 
 
-def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
-    periodic_table = Chem.GetPeriodicTable()
+def generate_molecules(seed, n_molecules):
+    def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
+        periodic_table = Chem.GetPeriodicTable()
 
-    file = open(
-        os.path.join(output_path, f'{compound_name.replace("/", "_")}.xyz'), "w"
-    )
-
-    file.write(f"{len(atoms)}\n\n")
-
-    for coordinate, atom in zip(coordinates, atoms):
-        x = coordinate[0]
-        y = coordinate[1]
-        z = coordinate[2]
-        file.write(
-            f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n"
+        file = open(
+            os.path.join(output_path, f'{compound_name.replace("/", "_")}.xyz'), "w"
         )
 
-    file.close()
+        file.write(f"{len(atoms)}\n\n")
 
+        for coordinate, atom in zip(coordinates, atoms):
+            x = coordinate[0]
+            y = coordinate[1]
+            z = coordinate[2]
+            file.write(
+                f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n"
+            )
 
-def generate_molecules(seed, n_molecules):
+        file.close()
+
     np.random.seed(seed)
 
     data = np.load("DFT_all.npz", allow_pickle=True)
