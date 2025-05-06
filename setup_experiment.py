@@ -7,43 +7,59 @@ import rdkit.Chem as Chem
 from tqdm import tqdm
 
 
-def generate_molecules(seed, n_molecules):
-    def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
-        periodic_table = Chem.GetPeriodicTable()
+def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
+    periodic_table = Chem.GetPeriodicTable()
 
-        file = open(
-            os.path.join(output_path, f'{compound_name.replace("/", "_")}.xyz'), "w"
+    file = open(
+        os.path.join(output_path, f'{compound_name.replace("/", "_")}.xyz'), "w"
+    )
+
+    file.write(f"{len(atoms)}\n\n")
+
+    for coordinate, atom in zip(coordinates, atoms):
+        x = coordinate[0]
+        y = coordinate[1]
+        z = coordinate[2]
+        file.write(
+            f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n"
         )
 
-        file.write(f"{len(atoms)}\n\n")
+    file.close()
 
-        for coordinate, atom in zip(coordinates, atoms):
-            x = coordinate[0]
-            y = coordinate[1]
-            z = coordinate[2]
-            file.write(
-                f"{periodic_table.GetElementSymbol(int(atom))}\t{x:>11.8f}\t{y:>11.8f}\t{z:>11.8f}\n"
-            )
 
-        file.close()
-
+def generate_molecules(seed, n_molecules, type):
     np.random.seed(seed)
 
-    data = np.load("DFT_all.npz", allow_pickle=True)
+    if type == "all":
+        data = np.load("reference_data/DFT_all.npz", allow_pickle=True)
+        molecules = list(zip(data["coordinates"], data["atoms"], data["compounds"]))
+    elif type == "uniques":
+        data = np.load("reference_data/DFT_uniques.npz", allow_pickle=True)
+        molecules = list(
+            zip(data["coordinates"], data["atoms"], data["compounds"], data["graphs"])
+        )
+    else:
+        raise ValueError("Invalid type. Use 'all' or 'uniques'.")
 
-    output_path = f"./molecules_{n_molecules}_molecules_{seed}_seed"
+    output_path = f"./{type}_{n_molecules}_molecules_{seed}_seed"
     os.makedirs(output_path, exist_ok=True)
 
-    molecules = list(zip(data["coordinates"], data["atoms"], data["compounds"]))
     sampled_indices = np.random.choice(len(molecules), n_molecules, replace=False)
 
     results = []
+    name_to_inchi = {}
     with ThreadPool() as p:
         for index in tqdm(
             sampled_indices,
             desc="Creating xyz files",
         ):
-            coordinates, atoms, compound_name = molecules[index]
+            if type == "all":
+                coordinates, atoms, compound_name = molecules[index]
+            elif type == "uniques":
+                coordinates, atoms, compound_name, inchi = molecules[index]
+                name_to_inchi[compound_name] = inchi
+            else:
+                raise ValueError("Invalid type. Use 'all' or 'uniques'.")
 
             results.append(
                 p.apply_async(
@@ -54,6 +70,10 @@ def generate_molecules(seed, n_molecules):
 
         for result in tqdm(results, desc="Results"):
             result.get()
+
+    if type == "uniques":
+        with open(os.path.join(output_path, "name_to_smiles.json"), "w") as f:
+            json.dump(name_to_inchi, f, indent=4)
 
 
 def generate_parameters():
@@ -87,7 +107,7 @@ def generate_parameters():
     # selected_parameters = ["ks", "kp", "kexp"]
     selected_parameters = default_parameter_values.keys()
 
-    new_parameter_factors = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+    new_parameter_factors = [0.8, 0.9, 1.0, 1.1, 1.2]
 
     new_parameters = {}
     for parameter_name, base_value in default_parameter_values.items():
@@ -152,6 +172,7 @@ def generate_parameters_files():
 
 
 if __name__ == "__main__":
-    generate_molecules(n_molecules=100, seed=42)
+    # generate_molecules(n_molecules=100, seed=42, type="all")
+    generate_molecules(n_molecules=100, seed=42, type="uniques")
     generate_parameters()
     generate_parameters_files()
