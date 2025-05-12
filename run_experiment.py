@@ -6,7 +6,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from tqdm import tqdm
 
-from experiments import rdkit_generate_geometries, run_experiment
+from experiments import rdkit_generate_geometries, execute_xtb_run
 
 
 if __name__ == "__main__":
@@ -30,7 +30,7 @@ if __name__ == "__main__":
             ):
                 results.append(
                     p.apply_async(
-                        run_experiment,
+                        execute_xtb_run,
                         args=(xtb_parameter_file_path, molecule_xyz_path),
                     )
                 )

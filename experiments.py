@@ -6,11 +6,15 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 
-def run_experiment(xtb_parameter_file_path, molecule_path):
-    molecule_name = molecule_path.stem
-    output_dir = xtb_parameter_file_path.parent / molecule_name
+def execute_xtb_run(
+    xtb_parameter_file_path, molecule_geometry_path, output_dir=None, xtb_args=None
+):
+    molecule_name = molecule_geometry_path.stem
+    if output_dir is None:
+        output_dir = xtb_parameter_file_path.parent / molecule_name
 
-    if output_dir.exists() and os.listdir(output_dir) != 0:
+    if output_dir.exists() and "xtbopt.xyz" in os.listdir(output_dir):
+        print(f"Skipping {molecule_name} as it has already been processed.")
         return
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -22,19 +26,22 @@ def run_experiment(xtb_parameter_file_path, molecule_path):
             subprocess.run(
                 [
                     "xtb",
-                    molecule_path.resolve(),
+                    molecule_geometry_path.resolve(),
                     "-v",
                     "--opt",
+                    "--grad",
                     "--vparam",
                     xtb_parameter_file_path.resolve(),
-                ],
+                ]
+                + (xtb_args if xtb_args else []),
                 cwd=output_dir,
                 stdout=stdout_file,
                 stderr=stderr_file,
                 timeout=60,
+                check=True,
             )
     except Exception as e:
-        print(e)
+        raise RuntimeError(f"Error running xTB for {molecule_name}: {e}") from e
 
 
 def rdkit_generate_geometries(molecules_path, name_to_smiles_path, output_path):
