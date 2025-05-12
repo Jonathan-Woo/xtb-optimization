@@ -6,6 +6,8 @@ import numpy as np
 import rdkit.Chem as Chem
 from tqdm import tqdm
 
+from pathlib import Path
+
 
 def create_molecule_xyz_file(coordinates, atoms, output_path, compound_name):
     periodic_table = Chem.GetPeriodicTable()
@@ -127,8 +129,35 @@ def generate_parameters():
         json.dump(new_parameters, f, indent=4)
 
 
+def generate_parameter_file(parameter_changes, outpath):
+    with open("./param_gfn2-xtb.txt", "r") as f:
+        base_xtb_parameters = f.read().split("\n")
+
+    new_xtb_parameters = base_xtb_parameters.copy()
+    for parameter_name, parameter_value in parameter_changes.items():
+        for line_number, param_line in enumerate(base_xtb_parameters):
+            if param_line.startswith(parameter_name):
+                base_xtb_parameter_line_number = line_number
+
+                num_white_spaces = 12 - len(parameter_name)
+                new_xtb_parameters[base_xtb_parameter_line_number] = (
+                    f"{parameter_name}{' ' * num_white_spaces}{parameter_value:>7.5f}"
+                )
+                break
+
+    new_xtb_parameters = "\n".join(new_xtb_parameters)
+
+    os.makedirs(outpath.parent, exist_ok=True)
+
+    with open(
+        outpath,
+        "w",
+    ) as f:
+        f.write(new_xtb_parameters)
+
+
 def generate_parameters_files():
-    experiments_path = "./experiments"
+    experiments_path = Path("./experiments")
 
     with open("./parameters.json", "r") as f:
         parameters_to_test = json.load(f)
@@ -141,38 +170,17 @@ def generate_parameters_files():
     for parameter_name, parameter_values in parameters_to_test.items():
         for parameter_factor, parameter_value in parameter_values.items():
 
-            for line_number, param_line in enumerate(base_xtb_parameters):
-                if param_line.startswith(parameter_name):
-                    base_xtb_parameter_line_number = line_number
-                    break
-
-            new_xtb_parameters = base_xtb_parameters.copy()
-            num_white_spaces = 12 - len(parameter_name)
-            new_xtb_parameters[base_xtb_parameter_line_number] = (
-                f"{parameter_name}{' ' * num_white_spaces}{parameter_value:>7.5f}"
+            outpath = (
+                experiments_path
+                / parameter_name
+                / f"{parameter_factor}_{parameter_value}"
+                / f"{parameter_name}_{parameter_factor}_{parameter_value}.txt"
             )
-
-            new_xtb_parameters = "\n".join(new_xtb_parameters)
-            new_xtb_parameters_path = os.path.join(
-                experiments_path,
-                parameter_name,
-                f"{parameter_factor}_{parameter_value}",
-            )
-
-            os.makedirs(new_xtb_parameters_path, exist_ok=True)
-
-            with open(
-                os.path.join(
-                    new_xtb_parameters_path,
-                    f"{parameter_name}_{parameter_factor}_{parameter_value}.txt",
-                ),
-                "w",
-            ) as f:
-                f.write(new_xtb_parameters)
+            generate_parameter_file({parameter_name: parameter_value}, outpath)
 
 
 if __name__ == "__main__":
     # generate_molecules(n_molecules=100, seed=42, type="all")
-    generate_molecules(n_molecules=100, seed=42, type="uniques")
-    generate_parameters()
+    # generate_molecules(n_molecules=100, seed=42, type="uniques")
+    # generate_parameters()
     generate_parameters_files()
