@@ -39,4 +39,3 @@ def average_abs_dist(dist_df1, dist_df2):
     abs_dist_arr = abs(dist_df1 - dist_df2)
     avg_dist = abs_dist_arr[np.triu_indices_from(abs_dist_arr, k=1)].mean()
     return avg_dist
-
