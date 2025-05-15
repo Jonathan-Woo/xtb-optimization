@@ -12,12 +12,14 @@ from setup_experiment import generate_parameter_file
 
 
 def create_objective(molecule, initial_geometry_path, reference_geometry):
+    outdir = Path(__file__).parent / "optimizations" / molecule
+    outdir.mkdir(parents=True, exist_ok=True)
+
     def loss_fn(params_dict, outpath):
         generate_parameter_file(
             params_dict,
             outpath / "xtb_parameters.txt",
         )
-
         try:
             execute_xtb_run(
                 outpath / "xtb_parameters.txt",
@@ -26,7 +28,7 @@ def create_objective(molecule, initial_geometry_path, reference_geometry):
                 xtb_args=["-P", "1"],
             )
         except Exception as e:
-            print(f"xTB run failed: {e}")
+            print(f"[{molecule}] xTB run failed: {e}")
             return float("inf")
 
         xtb_geom = xyz_to_np(outpath / "xtbopt.xyz")[0]
@@ -51,79 +53,33 @@ def create_objective(molecule, initial_geometry_path, reference_geometry):
         return grad, np.linalg.norm(grad)
 
     def objective(trial):
-        params = [
-            trial.suggest_float("ksd", 1.6, 2.4),
-            trial.suggest_float("kpd", 1.6, 2.4),
-            trial.suggest_float("kp", 1.784, 2.676),
-            trial.suggest_float("ks", 1.48, 2.22),
-            trial.suggest_float("kexp", 1.2, 1.8),
-        ]
-
-        outpath = (
-            Path(__file__).parent / "optimizations" / molecule / f"trial_{trial.number}"
-        )
-
-        parameters = {
-            "ksd": params[0],
-            "kpd": params[1],
-            "kp": params[2],
-            "ks": params[3],
-            "kexp": params[4],
+        params = {
+            "ksd": trial.suggest_float("ksd", 1.6, 2.4),
+            "kpd": trial.suggest_float("kpd", 1.6, 2.4),
+            "kp": trial.suggest_float("kp", 1.784, 2.676),
+            "ks": trial.suggest_float("ks", 1.48, 2.22),
+            "kexp": trial.suggest_float("kexp", 1.2, 1.8),
         }
 
-        loss = loss_fn(
-            parameters,
-            outpath,
-        )
+        trial_outpath = outdir / f"trial_{trial.number}"
+        trial_outpath.mkdir(parents=True, exist_ok=True)
 
+        loss = loss_fn(params, trial_outpath)
+
+        # Only compute gradient every 10 trials
         if trial.number % 10 == 0 and trial.number > 0:
-            grad, norm_grad = gradient(parameters, outpath / "gradients")
+            grad_out = trial_outpath / "gradients"
+            grad_out.mkdir(parents=True, exist_ok=True)
+            grad, norm_grad = gradient(params, grad_out)
 
-            gradient_norms.append((trial.number, norm_grad))
+            trial.set_user_attr("gradient_norm", norm_grad)
 
             if norm_grad < 1e-3:
-                study.stop()
-
-            fig = vis.plot_optimization_history(study)
-            fig.write_image(
-                outpath.parent / "optimization_history.png",
-                format="png",
-                scale=2,
-            )
-
-            plt.figure()
-            plt.scatter(
-                [x[0] for x in gradient_norms],
-                [x[1] for x in gradient_norms],
-                label="Gradient Norm",
-            )
-            min_grads = [gradient_norms[0]]
-            cur_min_grad = min_grads[0][1]
-            for i in range(1, len(gradient_norms)):
-                if gradient_norms[i][1] < cur_min_grad:
-                    cur_min_grad = gradient_norms[i][1]
-                    min_grads.append(gradient_norms[i])
-                else:
-                    min_grads.append((gradient_norms[i][0], min_grads[-1][1]))
-
-            plt.plot(
-                [x[0] for x in min_grads],
-                [x[1] for x in min_grads],
-                label="Minimum Gradient Norm",
-                color="red",
-            )
-            plt.xlabel("Trial Number")
-            plt.ylabel("Gradient Norm")
-            plt.title("Gradient Norms Over Trials")
-            plt.savefig(
-                outpath.parent / "gradient_norms.png",
-                format="png",
-            )
+                trial.study.stop()
 
         return loss
 
     study = optuna.create_study(direction="minimize")
-
     study.enqueue_trial(
         {
             "ksd": 2.0,
@@ -134,14 +90,13 @@ def create_objective(molecule, initial_geometry_path, reference_geometry):
         }
     )
 
-    gradient_norms = []
-
     study.optimize(objective, n_trials=100)
 
-    outpath = Path(__file__).parent / "optimizations" / molecule
-
-    with open(outpath / "best_params.txt", "w") as f:
+    with open(outdir / "best_params.txt", "w") as f:
         f.write(str(study.best_params))
+
+    fig = vis.plot_optimization_history(study)
+    fig.write_image(outdir / "optimization_history.png", format="png", scale=2)
 
 
 if __name__ == "__main__":
@@ -152,16 +107,16 @@ if __name__ == "__main__":
         Path(__file__).parent.parent / "uniques_100_molecules_42_seed"
     )
 
-    with Pool() as p:
-        for intial_geometry_path in initial_geometries_path.glob("*.xyz"):
-            molecule_name = intial_geometry_path.stem
-            reference_geometry = xyz_to_np(
-                reference_geometry_path / f"{molecule_name}.xyz"
-            )[0]
+    with Pool(1) as p:
 
-            p.apply_async(
-                create_objective,
-                args=(molecule_name, intial_geometry_path, reference_geometry),
-            )
-        p.close()
-        p.join()
+        p.starmap(
+            create_objective,
+            [
+                (
+                    path.stem,
+                    path,
+                    xyz_to_np(reference_geometry_path / f"{path.stem}.xyz")[0],
+                )
+                for path in initial_geometries_path.glob("*.xyz")
+            ],
+        )
