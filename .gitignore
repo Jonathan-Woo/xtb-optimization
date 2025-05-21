@@ -163,6 +163,11 @@ cython_debug/
 
 molecules*/
 experiments*/
+**/*.xyz
+
+BO/optimizations/
+force_distribution/
+force_distribution_with_opt/
 
 .DS_Store
 .vscode
