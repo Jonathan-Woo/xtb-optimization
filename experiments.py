@@ -7,7 +7,11 @@ from rdkit.Chem import AllChem
 
 
 def execute_xtb_run(
-    xtb_parameter_file_path, molecule_geometry_path, output_dir=None, xtb_args=None
+    xtb_parameter_file_path,
+    molecule_geometry_path,
+    output_dir=None,
+    xtb_args=None,
+    single_threaded=False,
 ):
     molecule_name = molecule_geometry_path.stem
     if output_dir is None:
@@ -39,6 +43,11 @@ def execute_xtb_run(
                 stderr=stderr_file,
                 timeout=60,
                 check=True,
+                env=(
+                    {**os.environ, "OMP_NUM_THREADS": "1"}
+                    if single_threaded
+                    else os.environ
+                ),
             )
     except Exception as e:
         raise RuntimeError(f"Error running xTB for {molecule_name}: {e}") from e

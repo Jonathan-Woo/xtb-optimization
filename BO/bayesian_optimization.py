@@ -13,6 +13,8 @@ from experiments import execute_xtb_run
 from processing_utils import xyz_to_np
 from setup_experiment import generate_parameter_file
 
+import os
+
 
 def loss_fn(params_dict, initial_geometry_path, reference_geometry, outpath):
     generate_parameter_file(
@@ -24,7 +26,7 @@ def loss_fn(params_dict, initial_geometry_path, reference_geometry, outpath):
             outpath / "xtb_parameters.txt",
             initial_geometry_path,
             outpath,
-            xtb_args=["-P", "1"],
+            single_threaded=True,
         )
     except Exception as e:
         print(f"[{initial_geometry_path.stem}] xTB run failed: {e}")
@@ -147,8 +149,33 @@ def create_objective(molecule, initial_geometry_path, reference_geometry, outdir
         plt.close()
 
 
-def scp_loss(x, initial_geometry_path, reference_geometry, outpath):
+class scp_optimizer:
+    def __init__(
+        self, initial_geometry_path, reference_geometry, outpath, initial_trial_num
+    ):
+        self.initial_geometry_path = initial_geometry_path
+        self.reference_geometry = reference_geometry
+        self.outpath = outpath
+        self.initial_trial_num = initial_trial_num
+
+    def __call__(self, x):
+        params = dict(zip(["ksd", "kpd", "kp", "ks", "kexp"], x))
+
+        cur_outpath = self.outpath / f"trial_{self.initial_trial_num}"
+
+        os.makedirs(cur_outpath, exist_ok=True)
+        self.initial_trial_num += 1
+
+        return loss_fn(
+            params, self.initial_geometry_path, self.reference_geometry, cur_outpath
+        )
+
+
+def scp_loss(x, initial_geometry_path, reference_geometry, outpath, initial_trial_num):
     params = dict(zip(["ksd", "kpd", "kp", "ks", "kexp"], x))
+
+    os.makedirs(outpath / f"trial_{initial_trial_num}", exist_ok=True)
+
     return loss_fn(params, initial_geometry_path, reference_geometry, outpath)
 
 
@@ -160,7 +187,7 @@ if __name__ == "__main__":
         Path(__file__).parent.parent / "uniques_100_molecules_42_seed"
     )
 
-    constrained_list = list(initial_geometries_path.glob("*.xyz"))[:3]
+    constrained_list = list(initial_geometries_path.glob("*.xyz"))[:1]
     # 1. Optuna TPE for the first 100 trials
     with Pool(8) as p:
         # for path in initial_geometries_path.glob("*.xyz"):
@@ -198,16 +225,18 @@ if __name__ == "__main__":
                 best_params["ks"],
                 best_params["kexp"],
             ]
-            f = partial(
-                scp_loss,
+
+            scp_instance = scp_optimizer(
                 initial_geometry_path=path,
                 reference_geometry=xyz_to_np(
                     reference_geometry_path / f"{path.stem}.xyz"
                 )[0],
                 outpath=Path(__file__).parent / "optimizations" / path.stem,
+                initial_trial_num=100,
             )
+
             minimize(
-                f,
+                scp_instance,
                 best_params,
                 method="BFGS",
                 options={"disp": True},
