@@ -9,7 +9,7 @@ from setup_experiment import generate_dft_input_file, generate_xtb_parameter_fil
 
 
 if __name__ == "__main__":
-    optimization_type = "forces_wider"
+    optimization_type = "forces_wider_complete"
     BO_optimizations_path = (
         Path(__file__).parent.parent / "BO" / f"optimizations_{optimization_type}"
     )
