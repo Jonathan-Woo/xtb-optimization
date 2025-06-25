@@ -1,0 +1,12 @@
+molecule {
+
+}
+
+set {
+  g_convergence GAU_TIGHT
+  scf_type df
+  geom_maxiter 100
+  basis cc-pvdz
+}
+
+optimize('wb97x-d3')

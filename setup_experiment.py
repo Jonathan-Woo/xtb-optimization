@@ -109,7 +109,23 @@ def generate_parameters():
     # selected_parameters = ["ks", "kp", "kexp"]
     selected_parameters = default_parameter_values.keys()
 
-    new_parameter_factors = [0.8, 0.9, 1.0, 1.1, 1.2]
+    new_parameter_factors = [
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1.0,
+        1.1,
+        1.2,
+        1.3,
+        1.4,
+        1.5,
+        1.6,
+        1.7,
+    ]
 
     new_parameters = {}
     for parameter_name, base_value in default_parameter_values.items():
@@ -129,7 +145,7 @@ def generate_parameters():
         json.dump(new_parameters, f, indent=4)
 
 
-def generate_parameter_file(parameter_changes, outpath):
+def generate_xtb_parameter_file(parameter_changes, outpath):
     with open("./param_gfn2-xtb.txt", "r") as f:
         base_xtb_parameters = f.read().split("\n")
 
@@ -156,7 +172,7 @@ def generate_parameter_file(parameter_changes, outpath):
         f.write(new_xtb_parameters)
 
 
-def generate_parameters_files():
+def generate_xtb_parameters_files():
     experiments_path = Path("./experiments")
 
     with open("./parameters.json", "r") as f:
@@ -176,11 +192,38 @@ def generate_parameters_files():
                 / f"{parameter_factor}_{parameter_value}"
                 / f"{parameter_name}_{parameter_factor}_{parameter_value}.txt"
             )
-            generate_parameter_file({parameter_name: parameter_value}, outpath)
+            generate_xtb_parameter_file({parameter_name: parameter_value}, outpath)
+
+
+def generate_dft_input_file(xyz_path, output_path):
+    with open(xyz_path, "r") as f:
+        lines = f.read().strip().split("\n")
+
+    atom_lines = lines[2:]
+
+    molecule_block = ["molecule {"]
+    molecule_block += atom_lines
+    molecule_block.append("}")
+
+    psi4_input = """
+set {
+  g_convergence GAU_TIGHT
+  scf_type df
+  geom_maxiter 100
+  basis cc-pvdz
+}
+
+optimize('wb97x-d3')
+""".strip()
+
+    full_input = "\n".join(molecule_block) + "\n\n" + psi4_input
+
+    with open(output_path, "w") as f:
+        f.write(full_input)
 
 
 if __name__ == "__main__":
     # generate_molecules(n_molecules=100, seed=42, type="all")
-    # generate_molecules(n_molecules=100, seed=42, type="uniques")
+    generate_molecules(n_molecules=10000, seed=42, type="uniques")
     # generate_parameters()
-    generate_parameters_files()
+    # generate_xtb_parameters_files()

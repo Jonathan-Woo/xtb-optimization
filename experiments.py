@@ -6,19 +6,54 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 
+def execute_dft_run(
+    dft_input_file_path,
+    output_dir=None,
+    n_threads=1,
+):
+    if not output_dir:
+        output_dir = dft_input_file_path.parent
+    if output_dir.exists() and any(output_dir.glob("*.out")):
+        print(
+            f"Skipping {dft_input_file_path.stem} at {output_dir} as it has already been processed."
+        )
+        return
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with open(output_dir / "stdout.txt", "w") as stdout_file, open(
+            output_dir / "stderr.txt", "w"
+        ) as stderr_file:
+            subprocess.run(
+                (["psi4", "-i", dft_input_file_path.resolve(), "-n", str(n_threads)]),
+                cwd=output_dir,
+                stdout=stdout_file,
+                stderr=stderr_file,
+                check=True,
+            )
+    except Exception as e:
+        # raise RuntimeError(
+        #     f"Error running DFT for {dft_input_file_path.stem}: {e}"
+        # ) from e
+        print(f"Error running DFT for {dft_input_file_path.stem}: {e}")
+
+
 def execute_xtb_run(
     xtb_parameter_file_path,
     molecule_geometry_path,
-    output_dir=None,
+    output_dir,
+    single_threaded,
+    optimize,
     xtb_args=None,
-    single_threaded=False,
 ):
     molecule_name = molecule_geometry_path.stem
     if output_dir is None:
         output_dir = xtb_parameter_file_path.parent / molecule_name
 
     if output_dir.exists() and "xtbopt.xyz" in os.listdir(output_dir):
-        print(f"Skipping {molecule_name} as it has already been processed.")
+        print(
+            f"Skipping {molecule_name} at {output_dir} as it has already been processed."
+        )
         return
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -32,7 +67,7 @@ def execute_xtb_run(
                     "xtb",
                     molecule_geometry_path.resolve(),
                     "-v",
-                    "--opt",
+                    "--opt" if optimize else "",
                     "--grad",
                     "--vparam",
                     xtb_parameter_file_path.resolve(),
@@ -50,6 +85,7 @@ def execute_xtb_run(
                 ),
             )
     except Exception as e:
+        print(f"Error running xTB for {molecule_name}: {e}")
         raise RuntimeError(f"Error running xTB for {molecule_name}: {e}") from e
 
 

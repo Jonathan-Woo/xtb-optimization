@@ -1,0 +1,74 @@
+\documentclass{article}
+\usepackage{amsmath} % for equation environments
+\usepackage{amssymb} % for extra math symbols
+\usepackage{geometry} % optional: better margins
+\geometry{margin=1in}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{equation*}
+    E_{\text{GFN2-xTB}} = E_{\text{rep}} + E_{\text{disp}} + E_{\text{EHT}} + E_{\text{IES+IXC}} + E_{\text{AES}} + E_{\text{AXC}} + G_{\text{Fermi}}
+\end{equation*}
+
+\begin{equation*}
+    E_{\mathrm{EHT}} = \sum_i n_i \langle \psi_i | \hat{H}_0 | \psi_i \rangle
+    = \sum_{\kappa} \sum_{\lambda} P_{\kappa \lambda} H_{\kappa \lambda}
+\end{equation*}
+
+\begin{equation*}
+    H_{\kappa\lambda} = k_{ll'} \cdot \frac{1}{2}(H_{\kappa\kappa} + H_{\lambda\lambda}) \cdot S_{\kappa\lambda}
+    \left( \frac{2 \sqrt{\zeta_\kappa \zeta_\lambda}}{\zeta_\kappa + \zeta_\lambda} \right)^{1/2}
+    \left( 1 + k_{\mathrm{EN}} \Delta \mathrm{EN}_{AB}^2 \right) \Pi(R_{AB,ll'})
+    \qquad (\kappa \in l \in A, \; \lambda \in l' \in B)
+\end{equation*}
+
+\begin{equation*}
+    E_{\mathrm{rep}} = \sum_{AB}
+    \frac{Y_A^{\mathrm{eff}} Y_B^{\mathrm{eff}}}{R_{AB}}
+    e^{ -\left( \alpha_A \alpha_B \right)^{1/2} (R_{AB})^{k_{\mathrm{rep}}} }
+\end{equation*}
+
+\begin{equation*}
+    \Delta_{\text{dist}} = \left\| D^{\text{xTB}} - D^{\text{DFT}} \right\|_F
+    = \sqrt{ \sum_{i=1}^{N} \sum_{j=1}^{N} \left( D_{ij}^{\text{xTB}} - D_{ij}^{\text{DFT}} \right)^2 }
+\end{equation*}
+
+\begin{equation*}
+    F_{\text{max}} = \max_{i \in \{1, \ldots, N\}} \left\| \mathbf{F}_i \right\|_2
+    = \max_{i} \sqrt{F_{ix}^2 + F_{iy}^2 + F_{iz}^2}
+\end{equation*}
+
+
+\begin{equation*}
+    x^{(t+1)} = x^{(t)} - \eta \cdot \nabla f(x^{(t)}), \quad \text{where} \quad
+    \frac{\partial f}{\partial x_i} \approx \frac{f(x^{(t)} + \epsilon e_i) - f(x^{(t)} - \epsilon e_i)}{2\epsilon}
+\end{equation*}
+
+\begin{equation*}
+    \psi_i = \sum_{\kappa}^{N_{\text{AO}}} c_{\kappa i} \, \phi_{\kappa}(\zeta_{\kappa}, \text{STO-}m\text{G})
+\end{equation*}
+
+\begin{equation*}
+    \begin{aligned}
+        E_{\text{EHT}} & = \sum_{i} n_i \langle \psi_i | \hat{H}_0 | \psi_i \rangle
+        = \sum_{\kappa} \sum_{\lambda} \sum_{i} n_i c_{\kappa i} c_{\lambda i}
+        \langle \phi_{\lambda} | \hat{H}_0 | \phi_{\kappa} \rangle                                 \\
+                       & \equiv \sum_{\kappa} \sum_{\lambda} P_{\kappa \lambda} H_{\lambda \kappa}
+    \end{aligned}
+\end{equation*}
+
+\begin{equation*}
+    \text{MAE} = \frac{1}{N} \sum_{i=1}^{N} \left| E_i^{\text{xTB}} - E_i^{\text{DFT}} \right|
+\end{equation*}
+
+\begin{enumerate}
+    \item $k_{\text{rep}}$
+    \item $k_{\text{sd}}$
+    \item $k_{\text{pd}}$
+    \item $k_{\text{ss}}$
+    \item $k_{\text{pp}}$
+\end{enumerate}
+
+
+\end{document}
