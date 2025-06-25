@@ -2,7 +2,7 @@
 
 ## Setup
 
-Download the reference VQM24 dataset from [zenodo]{<https://zenodo.org/records/11164951}>.
+Download the reference VQM24 dataset from [zenodo](https://zenodo.org/records/11164951}).
 
 Create environment with `conda env create -f environment.yml`
 
