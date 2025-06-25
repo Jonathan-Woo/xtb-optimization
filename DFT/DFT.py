@@ -88,8 +88,11 @@ if __name__ == "__main__":
         p.join()
 
     for molecule in DFT_path.iterdir():
-        if molecule.is_dir():
-
+        if (
+            molecule.is_dir()
+            and (molecule / "base" / "xtb" / "xtbopt.xyz").exists()
+            and (molecule / "optimized" / "xtb" / "xtbopt.xyz").exists()
+        ):
             base_dft_input_file_path = molecule / "base" / "DFT" / "dft_parameters.in"
             optimized_dft_input_file_path = (
                 molecule / "optimized" / "DFT" / "dft_parameters.in"
