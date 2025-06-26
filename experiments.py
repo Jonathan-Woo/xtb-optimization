@@ -39,16 +39,16 @@ def execute_dft_run(
 
 
 def execute_xtb_run(
-    xtb_parameter_file_path,
     molecule_geometry_path,
     output_dir,
     single_threaded,
     optimize,
+    xtb_parameters_file_path=None,
     xtb_args=None,
 ):
     molecule_name = molecule_geometry_path.stem
     if output_dir is None:
-        output_dir = xtb_parameter_file_path.parent / molecule_name
+        raise ValueError("output_dir must be specified")
 
     if output_dir.exists() and "xtbopt.xyz" in os.listdir(output_dir):
         print(
@@ -63,16 +63,21 @@ def execute_xtb_run(
             output_dir / "stderr.txt", "w"
         ) as stderr_file:
             subprocess.run(
-                [
-                    "xtb",
-                    molecule_geometry_path.resolve(),
-                    "-v",
-                    "--opt" if optimize else "",
-                    "--grad",
-                    "--vparam",
-                    xtb_parameter_file_path.resolve(),
-                ]
-                + (xtb_args if xtb_args else []),
+                (
+                    [
+                        "xtb",
+                        molecule_geometry_path.resolve(),
+                        "-v",
+                        "--opt" if optimize else "",
+                        "--grad",
+                    ]
+                    + (
+                        ["--vparam", xtb_parameters_file_path.resolve()]
+                        if xtb_parameters_file_path
+                        else []
+                    )
+                    + (xtb_args if xtb_args else [])
+                ),
                 cwd=output_dir,
                 stdout=stdout_file,
                 stderr=stderr_file,
