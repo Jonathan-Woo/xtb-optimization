@@ -60,9 +60,7 @@ if __name__ == "__main__":
     cmbdf_global = generate_mbdf(
         all_charges, all_coords, local=False, progress_bar=True
     )
-    cmbdf_local = generate_mbdf(
-        all_charges, all_coords, local=True, progress_bar=True
-    )
+    cmbdf_local = generate_mbdf(all_charges, all_coords, local=True, progress_bar=True)
 
     slatm_global = [
         generate_slatm(coord, charge, mbtypes)
@@ -72,14 +70,24 @@ if __name__ == "__main__":
             total=len(all_coords),
         )
     ]
-    # slatm_local = [
-    #     generate_slatm(coord, charge, mbtypes, local=True)
-    #     for coord, charge in tqdm(
-    #         zip(all_coords, all_charges),
-    #         desc="Generating SLATM local",
-    #         total=len(all_coords),
-    #     )
-    # ]
+
+    slatm_pad = 50
+    slatm_local = [
+        np.array(generate_slatm(coord, charge, mbtypes, local=True))
+        for coord, charge in tqdm(
+            zip(all_coords, all_charges),
+            desc="Generating SLATM local",
+            total=len(all_coords),
+        )
+    ]
+
+    def pad_slatm_local(slatm, pad_len, pad_value=0.0):
+        n_atoms, d = slatm.shape
+        padded = np.full((pad_len, d), pad_value, dtype=slatm.dtype)
+        padded[:n_atoms, :] = slatm
+        return padded
+
+    slatm_local = [pad_slatm_local(slatm, slatm_pad) for slatm in slatm_local]
 
     fchl = [
         generate_fchl19(charge, coord, list(unique_charges), pad=50)
@@ -99,7 +107,7 @@ if __name__ == "__main__":
             "cmbdf_global": cmbdf_global[idx],
             "cmbdf_local": cmbdf_local[idx],
             "slatm_global": slatm_global[idx],
-            # "slatm_local": slatm_local[idx],
+            "slatm_local": slatm_local[idx],
             "fchl": fchl[idx],
             "charges": all_charges[idx],
         }
