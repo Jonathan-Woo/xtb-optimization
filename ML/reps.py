@@ -27,10 +27,10 @@ if __name__ == "__main__":
     random_seed = 42
     convs = get_convolutions(gradients=True)
 
-    rdkit_path = Path(__file__).parent.parent / "rdkit_uniques_100_molecules_42_seed"
-    reference_path = Path(__file__).parent.parent / "uniques_100_molecules_42_seed"
+    rdkit_path = Path(__file__).parent.parent / "rdkit_uniques_10000_molecules_42_seed"
+    reference_path = Path(__file__).parent.parent / "uniques_10000_molecules_42_seed"
     BO_experiments_path = (
-        Path(__file__).parent.parent / "BO" / "optimizations_forces_wider_complete"
+        Path(__file__).parent.parent / "BO" / "optimizations_forces_final"
     )
     molecules = []
     for molecule in BO_experiments_path.iterdir():

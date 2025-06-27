@@ -26,8 +26,8 @@ import shutil
 if __name__ == "__main__":
     random_seed = 42
 
-    rdkit_path = Path(__file__).parent.parent / "rdkit_uniques_100_molecules_42_seed"
-    reference_path = Path(__file__).parent.parent / "uniques_100_molecules_42_seed"
+    rdkit_path = Path(__file__).parent.parent / "rdkit_uniques_10000_molecules_42_seed"
+    reference_path = Path(__file__).parent.parent / "uniques_10000_molecules_42_seed"
     BO_experiments_path = (
         Path(__file__).parent.parent / "BO" / "optimizations_forces_final"
     )
@@ -37,8 +37,6 @@ if __name__ == "__main__":
             molecules.append(molecule)
 
     molecules = [molecule.stem for molecule in molecules]
-
-    molecules = molecules[:20]
 
     with open(Path(__file__).parent / "molecule_reps.pkl", "rb") as f:
         molecule_reps = pickle.load(f)
@@ -55,8 +53,7 @@ if __name__ == "__main__":
     rng = np.random.default_rng(random_seed)
 
     for train_set_size in tqdm(
-        # [50, 100, 200, 400, 800, 1600, 3200, 6400], desc="Training set sizes"
-        [10]
+        [50, 100, 200, 400, 800, 1600, 3200, 6400], desc="Training set sizes"
     ):
         for fold in tqdm(range(num_outer_folds), desc="Outer folds", leave=False):
             test = rng.choice(molecules, size=test_set_size, replace=False)
@@ -165,11 +162,7 @@ if __name__ == "__main__":
                         preds = KRR_global(train_reps, y_train, test_reps, best_params)
 
                 elif model == "xgboost":
-                    xgb_model = MultiOutputRegressor(
-                        XGBRegressor(
-                            objective="reg:squarederror", n_jobs=-1, **best_params
-                        )
-                    )
+                    xgb_model = MultiOutputRegressor(XGBRegressor(**best_params))
                     xgb_model.fit(train_reps, y_train)
 
                     preds = xgb_model.predict(test_reps)

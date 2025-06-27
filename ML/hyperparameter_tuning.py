@@ -37,7 +37,7 @@ if __name__ == "__main__":
         if (molecule / "BO_results.json").exists():
             molecules.append(molecule)
 
-    molecules = [molecule.stem for molecule in molecules][:20]
+    molecules = [molecule.stem for molecule in molecules]
 
     with open(Path(__file__).parent / "molecule_reps.pkl", "rb") as f:
         molecule_reps = pickle.load(f)
@@ -136,5 +136,5 @@ if __name__ == "__main__":
 
         metrics[rep_type][model] = best_params
 
-    with open(Path(__file__).parent / "hyperparameter_tuning.json", "w") as f:
+    with open(Path(__file__).parent / "hyperparameters.json", "w") as f:
         json.dump(metrics, f, indent=4)
