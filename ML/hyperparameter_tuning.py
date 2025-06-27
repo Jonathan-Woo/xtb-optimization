@@ -56,8 +56,8 @@ if __name__ == "__main__":
             ("cmbdf_global", "krr"),
             ("cmbdf_global", "xgboost"),
             ("slatm_global", "krr"),
-            ("slatm_global", "xgboost"),
-            # ("slatm_local", "krr"),
+            # ("slatm_global", "xgboost"),
+            ("slatm_local", "krr"),
             ("fchl", "krr"),
         ],
         desc="Models",
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
             best_params = grid_search.best_estimator_.estimator.get_params()
 
-        metrics[rep_type][model]["best_params"] = best_params
+        metrics[rep_type][model] = best_params
 
     with open(Path(__file__).parent / "hyperparameter_tuning.json", "w") as f:
         json.dump(metrics, f, indent=4)
