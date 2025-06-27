@@ -66,12 +66,13 @@ if __name__ == "__main__":
 
             for rep_type, model in tqdm(
                 [
-                    # ("cmbdf_global", "krr"),
+                    ("cmbdf_global", "krr"),
                     ("cmbdf_global", "xgboost"),
-                    # ("slatm_global", "krr"),
-                    # ("slatm_global", "xgboost"),
+                    ("cmbdf_local", "krr"),
+                    ("slatm_global", "krr"),
+                    ("slatm_global", "xgboost"),
                     # ("slatm_local", "krr"),
-                    # ("fchl", "krr"),
+                    ("fchl", "krr"),
                 ],
                 desc="Models",
                 leave=False,
