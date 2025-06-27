@@ -43,6 +43,9 @@ if __name__ == "__main__":
     with open(Path(__file__).parent / "molecule_reps.pkl", "rb") as f:
         molecule_reps = pickle.load(f)
 
+    with open(Path(__file__).parent / "hyperparameters.json", "r") as f:
+        hyperparameters = json.load(f)
+
     nested_dict = lambda: defaultdict(nested_dict)
     metrics = nested_dict()
 
@@ -142,17 +145,9 @@ if __name__ == "__main__":
                     ]
                 )
 
+                best_params = hyperparameters[rep_type][model]
                 if model == "krr":
-                    # Grid search for best parameters
-                    param_grid = {
-                        "lambda": [1e-3, 1e-6, 1e-9, 1e-10],
-                        "length": [0.1 * (2**i) for i in range(14)],
-                    }
-
                     if "local" in rep_type:
-                        best_params = GridSearchCV_local(
-                            train_reps, train_charges, y_train, param_grid, cv=4
-                        )
                         preds = KRR_local(
                             train_reps,
                             train_charges,
@@ -166,26 +161,17 @@ if __name__ == "__main__":
                         preds = preds.squeeze()
 
                     elif "global" in rep_type:
-                        best_params = GridSearchCV(
-                            train_reps, y_train, param_grid, cv=4
-                        )
-
                         preds = KRR_global(train_reps, y_train, test_reps, best_params)
 
                 elif model == "xgboost":
-                    param_grid = {}
                     xgb_model = MultiOutputRegressor(
-                        XGBRegressor(objective="reg:squarederror", n_jobs=-1)
+                        XGBRegressor(
+                            objective="reg:squarederror", n_jobs=-1, **best_params
+                        )
                     )
-                    grid_search = GridSearchCV_sklearn(
-                        xgb_model,
-                        param_grid,
-                        cv=4,
-                        scoring="neg_mean_squared_error",
-                    )
-                    grid_search.fit(train_reps, y_train)
+                    xgb_model.fit(train_reps, y_train)
 
-                    preds = grid_search.predict(test_reps)
+                    preds = xgb_model.predict(test_reps)
 
                 mae = np.mean(np.abs(preds - y_test), axis=0)
                 metrics[train_set_size][rep_type][fold] = {
