@@ -13,7 +13,7 @@ from processing_utils import read_energy_gradient, xyz_to_np
 from ML.KernelRidge import GridSearchCV_local, KRR_local, GridSearchCV, KRR_global
 from setup_experiment import generate_xtb_parameter_file
 from xgboost import XGBRegressor
-from sklearn.model_selection import GridSearchCV as GridSearchCV_sklearn
+from sklearn.model_selection import RandomizedSearchCV as RandomizedSearchCV_sklearn
 from sklearn.multioutput import MultiOutputRegressor
 
 from qml.representations import get_slatm_mbtypes, generate_slatm
@@ -37,15 +37,13 @@ if __name__ == "__main__":
         if (molecule / "BO_results.json").exists():
             molecules.append(molecule)
 
-    molecules = [molecule.stem for molecule in molecules]
+    molecules = [molecule.stem for molecule in molecules][:20]
 
     with open(Path(__file__).parent / "molecule_reps.pkl", "rb") as f:
         molecule_reps = pickle.load(f)
 
     nested_dict = lambda: defaultdict(nested_dict)
     metrics = nested_dict()
-
-    num_outer_folds = 5
 
     rng = np.random.default_rng(random_seed)
 
@@ -55,9 +53,10 @@ if __name__ == "__main__":
         [
             ("cmbdf_global", "krr"),
             ("cmbdf_global", "xgboost"),
+            ("cmbdf_local", "krr"),
             ("slatm_global", "krr"),
-            # ("slatm_global", "xgboost"),
-            ("slatm_local", "krr"),
+            ("slatm_global", "xgboost"),
+            # ("slatm_local", "krr"),
             ("fchl", "krr"),
         ],
         desc="Models",
@@ -123,8 +122,13 @@ if __name__ == "__main__":
             xgb_model = MultiOutputRegressor(
                 XGBRegressor(objective="reg:squarederror", n_jobs=-1)
             )
-            grid_search = GridSearchCV_sklearn(
-                xgb_model, param_grid, cv=4, scoring="neg_mean_squared_error", verbose=2
+            grid_search = RandomizedSearchCV_sklearn(
+                xgb_model,
+                param_grid,
+                cv=4,
+                scoring="neg_mean_squared_error",
+                verbose=2,
+                n_iter=25,
             )
             grid_search.fit(train_reps, y_train)
 
