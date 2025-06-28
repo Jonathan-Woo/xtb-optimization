@@ -168,7 +168,7 @@ if __name__ == "__main__":
                     preds = xgb_model.predict(test_reps)
 
                 mae = np.mean(np.abs(preds - y_test), axis=0)
-                metrics[train_set_size][rep_type][fold] = {
+                metrics[train_set_size][rep_type][model][fold] = {
                     "ksd": mae[0],
                     "kpd": mae[1],
                     "kp": mae[2],
