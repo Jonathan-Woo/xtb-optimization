@@ -223,13 +223,13 @@ if __name__ == "__main__":
                         bo_results = json.load(f)
                     max_atomic_forces_label.append(bo_results["best_value"])
 
-                metrics[train_set_size][rep_type][fold]["max_atomic_forces"] = np.mean(
-                    max_atomic_forces
-                ).tolist()
-
-                metrics[train_set_size][rep_type][fold]["max_atomic_forces_label"] = (
-                    np.mean(max_atomic_forces_label).tolist()
+                metrics[train_set_size][rep_type][model][fold]["max_atomic_forces"] = (
+                    np.mean(max_atomic_forces).tolist()
                 )
+
+                metrics[train_set_size][rep_type][model][fold][
+                    "max_atomic_forces_label"
+                ] = np.mean(max_atomic_forces_label).tolist()
 
     with open(Path(__file__).parent / "krr_metrics.json", "w") as f:
         json.dump(metrics, f, indent=4)
