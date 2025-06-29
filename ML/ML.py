@@ -47,7 +47,7 @@ if __name__ == "__main__":
     nested_dict = lambda: defaultdict(nested_dict)
     metrics = nested_dict()
 
-    test_set_size = 5
+    test_set_size = 200
     num_outer_folds = 5
 
     rng = np.random.default_rng(random_seed)
