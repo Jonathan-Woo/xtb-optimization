@@ -234,37 +234,44 @@ if __name__ == "__main__":
                     / f"train_size_{train_set_size}"
                     / f"fold_{fold}"
                 )
-                os.makedirs(save_dir, exist_ok=True)
 
-                logger = pl.loggers.TensorBoardLogger(save_dir=save_dir)
-                early_stop = EarlyStopping(
-                    monitor="val_loss", patience=20, mode="min", verbose=False
-                )
+                if not save_dir.exists():
+                    print(
+                        f"Training model {model_name} for train size {train_set_size} fold {fold}"
+                    )
+                    os.makedirs(save_dir, exist_ok=True)
 
-                callbacks = [
-                    spk.train.ModelCheckpoint(
-                        model_path=os.path.join(save_dir, "best_model"),
-                        save_top_k=1,
-                        monitor="val_loss",
-                    ),
-                    EpochProgressBar(),
-                    early_stop,
-                ]
+                    logger = pl.loggers.TensorBoardLogger(save_dir=save_dir)
+                    early_stop = EarlyStopping(
+                        monitor="val_loss", patience=20, mode="min", verbose=False
+                    )
 
-                trainer = pl.Trainer(
-                    max_epochs=2000,
-                    accelerator="gpu",
-                    devices=1,
-                    callbacks=callbacks,
-                    logger=logger,
-                    default_root_dir=save_dir,
-                    enable_progress_bar=False,
-                )
+                    callbacks = [
+                        spk.train.ModelCheckpoint(
+                            model_path=os.path.join(save_dir, "best_model"),
+                            save_top_k=1,
+                            monitor="val_loss",
+                        ),
+                        EpochProgressBar(),
+                        early_stop,
+                    ]
 
-                trainer.fit(
-                    task,
-                    datamodule=datamodule,
-                )
+                    trainer = pl.Trainer(
+                        max_epochs=2000,
+                        accelerator="gpu",
+                        devices=1,
+                        callbacks=callbacks,
+                        logger=logger,
+                        default_root_dir=save_dir,
+                        enable_progress_bar=False,
+                    )
+
+                    trainer.fit(
+                        task,
+                        datamodule=datamodule,
+                    )
+                else:
+                    print(f"Loading existing model from {save_dir}")
 
                 best_model = torch.load(os.path.join(save_dir, "best_model"))
 
